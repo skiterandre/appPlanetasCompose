@@ -25,9 +25,12 @@ import androidx.compose.ui.text.TextStyle
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
+import androidx.navigation.NavHostController
+import androidx.navigation.NavType
 import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.composable
 import androidx.navigation.compose.rememberNavController
+import androidx.navigation.navArgument
 
 class MainActivity : ComponentActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
@@ -38,12 +41,62 @@ class MainActivity : ComponentActivity() {
                 Surface(color = MaterialTheme.colors.background) {
                     val planetas = criaListaPlanetas()
                     val navController = rememberNavController()
-                    NavHost(navController = navController, startDestination = "TelaListagem") {
-                        composable("TelaListagem") { telaInicial(planetas = planetas) }
-
+                    navController.currentBackStackEntry?.arguments?.putParcelable("planeta", null)
+                    NavHost(navController = navController,
+                        startDestination = "TelaListagem") {
+                        composable("TelaListagem",
+                        arguments = listOf(navArgument("planeta"){type = NavType.ParcelableType(Planeta::class.java)})) {
+                            telaInicial(navController,
+                                planetas = planetas) }
+                        composable("TelaDetalhePlaneta") {
+                            val planeta = navController.previousBackStackEntry?.arguments?.getParcelable<Planeta>("planeta")
+                            planeta?.let{
+                                TelaDetalhes(navController,planeta = it) }
+                        }
                     }
 
                 }
+            }
+        }
+    }
+
+
+    @Composable
+    fun meuCard(navController: NavHostController, planeta: Planeta) {
+        Card(elevation = 4.dp,
+            shape = RoundedCornerShape(15.dp),
+            border = BorderStroke(2.dp, color = Color(0x77f5f5f5)),
+            modifier = Modifier
+                .fillMaxWidth()
+                .heightIn(max = 150.dp)
+                .fillMaxHeight()
+                .padding(5.dp)
+                .height(5.dp)
+                .clickable {
+                    navController.currentBackStackEntry?.arguments?.putParcelable("planeta",planeta)
+                    navController.navigate("TelaDetalhePlaneta")
+                }) {
+            Row(
+                modifier = Modifier
+                    .fillMaxSize()
+                    .padding(15.dp)
+            ) {
+                Image(
+                    painter = painterResource(id = planeta.imagem),
+                    contentDescription = planeta.descricao,
+                    modifier = Modifier
+                        .height(100.dp)
+                        .width(100.dp)
+                )
+                Text(
+                    text = planeta.nome,
+                    style = TextStyle(fontWeight = FontWeight.Bold),
+                    textAlign = TextAlign.Center,
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .padding(top = 30.dp)
+                )
+
             }
         }
     }
@@ -59,60 +112,27 @@ class MainActivity : ComponentActivity() {
         Planeta("Urano", "Penúltimo planeta do sistema solar", R.drawable.urano),
         Planeta("Netuno", "Último planeta do sistema solar", R.drawable.netuno)
     )
-}
 
-@Composable
-fun telaInicial(planetas: List<Planeta>) {
-    LazyColumn(){
-        itemsIndexed(planetas){
-            index, item -> meuCard(planeta = item)  
+
+    @Composable
+    fun telaInicial(navController:NavHostController,planetas: List<Planeta>) {
+        LazyColumn(){
+            itemsIndexed(planetas){
+                    index, item -> meuCard(navController,planeta = item)
+            }
         }
     }
+
+
 }
 
-@Composable
-fun meuCard(planeta: Planeta) {
-    Card(elevation = 4.dp,
-        shape = RoundedCornerShape(15.dp),
-        border = BorderStroke(2.dp, color = Color(0x77f5f5f5)),
-        modifier = Modifier
-            .fillMaxWidth()
-            .heightIn(max = 150.dp)
-            .fillMaxHeight()
-            .padding(5.dp)
-            .height(5.dp)
-            .clickable {
 
-            }) {
-        Row(
-            modifier = Modifier
-                .fillMaxSize()
-                .padding(15.dp)
-        ) {
-            Image(
-                painter = painterResource(id = planeta.imagem),
-                contentDescription = planeta.descricao,
-                modifier = Modifier
-                    .height(100.dp)
-                    .width(100.dp)
-            )
-            Text(
-                text = planeta.nome,
-                style = TextStyle(fontWeight = FontWeight.Bold),
-                textAlign = TextAlign.Center,
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .padding(top = 30.dp)
-            )
 
-        }
-    }
-}
 
 @Preview(showBackground = true)
 @Composable
 fun DefaultPreview() {
     AppPlanetasComposeTheme {
-        meuCard(Planeta("Mercurio", "planeta mais próximo do sol", R.drawable.mercurio))
+
     }
 }
